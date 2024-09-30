@@ -1,0 +1,21 @@
+[package]
+name = "game"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+# Some parameters here and in `.cargo/.config.toml` are for faster compilation, see following link.
+# <https://bevyengine.org/learn/quick-start/getting-started/setup/#enable-fast-compiles-optional>
+
+[dependencies]
+bevy = "0.14"
+avian2d = "0.1"
+log = { version = "*", features = ["max_level_debug", "release_max_level_warn"] }
+noise = "0.9.0"
+simplify-polyline = "0.5.0"
+bevy_egui = "0.29.0"
+rand = "0.8.5"
+rand_chacha = "0.3.1"
+
+[profile.dev.package.avian2d]
+opt-level = 3
