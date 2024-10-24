@@ -9,7 +9,7 @@ edition = "2021"
 
 [dependencies]
 bevy = "0.14"
-avian2d = "0.1"
+avian2d = "0.1.2"
 log = { version = "*", features = ["max_level_debug", "release_max_level_warn"] }
 noise = "0.9.0"
 simplify-polyline = "0.5.0"

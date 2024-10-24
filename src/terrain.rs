@@ -1,3 +1,5 @@
+use std::f32::consts::PI;
+
 use avian2d::{math::Vector, prelude::*};
 use bevy::{
     prelude::*,
@@ -5,7 +7,7 @@ use bevy::{
     window::PrimaryWindow,
 };
 use noise::{Fbm, MultiFractal, NoiseFn, OpenSimplex, Perlin, SuperSimplex};
-use rand::random;
+use rand::prelude::*;
 
 pub fn generate_points(seed: u32) -> Vec<Vec2> {
     let noise = SuperSimplex::new(0);
@@ -43,14 +45,7 @@ pub fn generate_points(seed: u32) -> Vec<Vec2> {
         if point < min {
             min = point;
         }
-
-        //println!("x: {:>18} = {}", x, point);
     }
-
-    //println!();
-    //
-    //println!("max: {}", max);
-    //println!("min: {}", min);
 
     points
 }
@@ -63,13 +58,51 @@ pub fn simplify_terrain(points: Vec<Vec2>) -> Vec<Vec2> {
 
     let simplified = simplify_polyline::simplify(&points, 2., true);
 
-    simplified
+    let mut simplified = simplified
         .iter()
         .map(|p| Vec2::new(p.vec[0], p.vec[1]))
+        .collect::<Vec<_>>();
+
+    simplified.push(simplified[0]);
+
+    simplified
+}
+
+pub fn get_landing_spots(points: &Vec<Vec2>) -> Vec<(Vec2, Vec2)> {
+    points
+        .chunks(2)
+        .filter_map(|points| {
+            let (point1, point2) = {
+                if points.len() != 2 {
+                    panic!("there is an odd number of points for terrain");
+                } else {
+                    (points[0], points[1])
+                }
+            };
+
+            let mid = point1.midpoint(point2);
+            let sphere_angle = mid.y.atan2(mid.x);
+
+            let angle = (point2.y - point1.y).atan2(point2.x - point1.x) - sphere_angle
+                + std::f32::consts::FRAC_PI_2;
+            let angle = (angle + PI).rem_euclid(2. * PI) - PI;
+            let angle = angle.to_degrees().abs();
+
+            let length = point1.distance(point2);
+
+            let max_angle = 26.;
+            let min_length = 50.;
+
+            if (angle >= 180. - max_angle || angle <= max_angle) && length >= min_length {
+                Some((point1, point2))
+            } else {
+                None
+            }
+        })
         .collect()
 }
 
-pub fn make_compound(points: Vec<Vec2>) -> Collider {
+pub fn make_compound(points: &Vec<Vec2>) -> Collider {
     let mut lines = Vec::new();
 
     let mut last_point = points[0];
@@ -79,10 +112,10 @@ pub fn make_compound(points: Vec<Vec2>) -> Collider {
 
         let line_length = point.distance(last_point);
         //let line = Collider::rectangle(line_length, 2.);
-        let line = Collider::capsule(1., line_length);
+        let line = Collider::capsule(2., line_length);
         let position = Position::new(last_point.midpoint(point));
         let rotation = avian2d::position::Rotation::radians(
-            (point.y - last_point.y).atan2(point.x - last_point.x) + std::f32::consts::PI / 2.,
+            (point.y - last_point.y).atan2(point.x - last_point.x) + std::f32::consts::FRAC_PI_2,
         );
 
         last_point = point;
